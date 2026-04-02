@@ -7,6 +7,7 @@
     <title>CareNote - Mon Suivi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* ===== DESIGN TOKENS ===== */
         :root {
@@ -1261,7 +1262,13 @@
         // ============================
         //  CONSTANTS & STATE
         // ============================
-        const STORAGE_KEY = 'carenote_entries';
+        const supabaseUrl = 'https://hgnyfwmcydujueudmun.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnbnlmd21jeWRjdWp1ZXVkbXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDQyMjIsImV4cCI6MjA5MDcyMDIyMn0.TGD74HWkEg7DqX_EdFJbq-AVp5Qn8gcH8EN4Ky_pj18';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        let currentUser = null;
+
+        const STORAGE_KEY = 'carenote_entries'; // Fallback / Local storage unused for entries
         const USER_KEY = 'carenote_user';
         const THEME_KEY = 'carenote_theme';
         const REMINDER_KEY = 'carenote_reminder';
@@ -1355,22 +1362,27 @@
         // ============================
         //  INIT
         // ============================
-        function init() {
-            // Check login
-            const user = getUser();
-            if (!user) {
+        async function init() {
+            // Check session Supabase
+            const guest = localStorage.getItem('carenote_guest');
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session && !guest) {
                 window.location.href = 'login.html';
                 return;
             }
 
+            currentUser = session ? session.user : null;
+            const prenom = currentUser ? (currentUser.user_metadata?.first_name || currentUser.email) : 'Invité';
+
             // Display username
             const usernameEl = document.getElementById('usernameDisplay');
-            usernameEl.textContent = user.prenom || user.email || '';
+            usernameEl.textContent = prenom;
 
             const welcomeEl = document.getElementById('welcomeMsg');
             const hour = new Date().getHours();
             const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
-            welcomeEl.textContent = `${greeting}, ${user.prenom || 'vous'} 👋`;
+            welcomeEl.textContent = `${greeting}, ${prenom} 👋`;
 
             // Bear message
             const bearMsg = document.getElementById('bearMsg');
@@ -1380,17 +1392,16 @@
             const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
             applyTheme(savedTheme);
 
-            // Load entries
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                entries = JSON.parse(stored);
+            // Load entries from Supabase
+            if (currentUser) {
+                const { data, error } = await supabase.from('carenote_entries').select('*').order('created_at', { ascending: false });
+                if (!error && data) {
+                    entries = data;
+                } else {
+                    entries = [];
+                }
             } else {
-                entries = [
-                    { humeur: '😄 Heureux', categorie: 'Relations', note: 'Journée super agréable', date: '16/02/2026' },
-                    { humeur: '🙂 Bien', categorie: 'Santé', note: 'J\'ai bien dormi', date: '16/02/2026' },
-                    { humeur: '😐 Normal', categorie: 'Travail', note: 'Rien de spécial', date: '15/02/2026' }
-                ];
-                saveEntries();
+                entries = []; // Invité a pas de sauvegarde cloud
             }
 
             // Reminder
@@ -1419,14 +1430,12 @@
         // ============================
         //  USER AUTH
         // ============================
-        function getUser() {
-            const u = localStorage.getItem(USER_KEY);
-            return u ? JSON.parse(u) : null;
-        }
-
-        function logout() {
+        async function logout() {
             if (confirm('Se déconnecter ?')) {
-                localStorage.removeItem(USER_KEY);
+                if(currentUser) {
+                    await supabase.auth.signOut();
+                }
+                localStorage.removeItem('carenote_guest');
                 window.location.href = 'login.html';
             }
         }
@@ -1465,19 +1474,16 @@
         }
 
         // ============================
-        //  SAVE / LOAD
-        // ============================
-        function saveEntries() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-        }
-
-        // ============================
         //  DELETE
         // ============================
-        function deleteEntry(index) {
+        async function deleteEntry(index) {
             if (confirm('Supprimer cette note ?')) {
+                const entry = entries[index];
+                if(currentUser && entry.id) {
+                    const { error } = await supabase.from('carenote_entries').delete().eq('id', entry.id);
+                    if (error) { showToast('❌ Erreur de suppression'); return; }
+                }
                 entries.splice(index, 1);
-                saveEntries();
                 render();
                 updateChart();
                 showToast('🗑️ Note supprimée');
@@ -1513,16 +1519,28 @@
             editingIndex = -1;
         }
 
-        function saveEdit() {
+        async function saveEdit() {
             if (editingIndex < 0) return;
             const mood = document.getElementById('editSelectedMood').value;
             if (!mood) { showToast('⚠️ Choisissez une humeur'); return; }
 
-            entries[editingIndex].humeur = mood;
-            entries[editingIndex].categorie = document.getElementById('editCategory').value;
-            entries[editingIndex].note = document.getElementById('editNote').value;
+            const category = document.getElementById('editCategory').value;
+            const note = document.getElementById('editNote').value;
+            const entryId = entries[editingIndex].id;
 
-            saveEntries();
+            if (currentUser && entryId) {
+                const { error } = await supabase.from('carenote_entries')
+                    .update({ humeur: mood, categorie: category, note: note })
+                    .eq('id', entryId);
+                if (error) { 
+                    showToast('❌ Erreur lors de la modification'); return; 
+                }
+            }
+
+            entries[editingIndex].humeur = mood;
+            entries[editingIndex].categorie = category;
+            entries[editingIndex].note = note;
+
             render();
             updateChart();
             closeModal();
@@ -1651,18 +1669,28 @@
             const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
 
             // Récupération météo (silencieuse si indisponible)
-            showToast('🌤️ Récupération de la météo...');
+            showToast('⏳ Enregistrement...');
             const meteo = await fetchWeather();
 
-            entries.unshift({
+            const newEntry = {
                 humeur: mood,
                 categorie: document.getElementById('categorySelect').value,
                 note: document.getElementById('noteInput').value,
-                date: dateStr,
-                meteo: meteo || null
-            });
+                date: dateStr
+            };
+            
+            if (currentUser) {
+                newEntry.user_id = currentUser.id;
+                const { data, error } = await supabase.from('carenote_entries').insert([newEntry]).select();
+                if (error) { showToast(`❌ Erreur: ${error.message}`); return; }
+                if (data && data.length > 0) {
+                    newEntry.id = data[0].id;
+                }
+            }
+            
+            newEntry.meteo = meteo || null; // local
+            entries.unshift(newEntry);
 
-            saveEntries();
             render();
             updateChart();
 

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CareNote - Connexion</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #4A90E2;
@@ -578,8 +579,9 @@
     <div class="footer-note">🔒 Vos données restent sur votre appareil — aucun serveur !</div>
 
     <script>
-        const USER_KEY = 'carenote_user';
-        const USERS_KEY = 'carenote_users';
+        const supabaseUrl = 'https://hgnyfwmcydujueudmun.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnbnlmd21jeWRjdWp1ZXVkbXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDQyMjIsImV4cCI6MjA5MDcyMDIyMn0.TGD74HWkEg7DqX_EdFJbq-AVp5Qn8gcH8EN4Ky_pj18';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // ========== THEME ==========
         function toggleTheme() {
@@ -590,17 +592,18 @@
             localStorage.setItem('carenote_theme', next);
         }
 
-        // Load saved theme
         const savedTheme = localStorage.getItem('carenote_theme');
         if (savedTheme) {
             document.documentElement.setAttribute('data-theme', savedTheme);
             document.getElementById('themeBtn').textContent = savedTheme === 'dark' ? '☀️ Jour' : '🌙 Nuit';
         }
 
-        // If already logged in → redirect
-        if (localStorage.getItem(USER_KEY)) {
-            window.location.href = 'dashboard.html';
-        }
+        // Check active session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                window.location.href = 'dashboard.html';
+            }
+        });
 
         // ========== TABS ==========
         function switchTab(tab) {
@@ -626,7 +629,7 @@
         }
 
         // ========== REGISTER ==========
-        function handleRegister() {
+        async function handleRegister() {
             const prenom = document.getElementById('regPrenom').value.trim();
             const email = document.getElementById('regEmail').value.trim().toLowerCase();
             const password = document.getElementById('regPassword').value;
@@ -634,51 +637,61 @@
 
             if (!prenom) return showMsg('registerMsg', '⚠️ Entrez votre prénom', 'error');
             if (!email.includes('@')) return showMsg('registerMsg', '⚠️ Email invalide', 'error');
-            if (password.length < 6) return showMsg('registerMsg', '⚠️ Mot de passe trop court (min. 6 caractères)', 'error');
+            if (password.length < 6) return showMsg('registerMsg', '⚠️ Mot de passe min. 6 caractères', 'error');
             if (password !== confirm) return showMsg('registerMsg', '❌ Les mots de passe ne correspondent pas', 'error');
 
-            const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-            if (users.find(u => u.email === email)) {
-                return showMsg('registerMsg', '❌ Un compte existe déjà avec cet email', 'error');
-            }
+            showMsg('registerMsg', 'Création en cours...', 'success');
+            
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        first_name: prenom
+                    }
+                }
+            });
 
-            // Save new user
-            users.push({ prenom, email, password });
-            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+            if (error) {
+                return showMsg('registerMsg', `❌ Erreur : ${error.message}`, 'error');
+            }
 
             showMsg('registerMsg', '✅ Compte créé ! Connexion en cours...', 'success');
 
             setTimeout(() => {
-                localStorage.setItem(USER_KEY, JSON.stringify({ prenom, email }));
                 window.location.href = 'dashboard.html';
             }, 1200);
         }
 
         // ========== LOGIN ==========
-        function handleLogin() {
+        async function handleLogin() {
             const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
 
-            if (!email) return showMsg('loginMsg', '⚠️ Entrez votre email', 'error');
-            if (!password) return showMsg('loginMsg', '⚠️ Entrez votre mot de passe', 'error');
+            if (!email || !password) return showMsg('loginMsg', '⚠️ Entrez email et mot de passe', 'error');
 
-            const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-            const user = users.find(u => u.email === email && u.password === password);
+            showMsg('loginMsg', 'Connexion en cours...', 'success');
 
-            if (!user) {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
                 return showMsg('loginMsg', '❌ Email ou mot de passe incorrect', 'error');
             }
 
-            showMsg('loginMsg', `✅ Bienvenue, ${user.prenom} ! Redirection...`, 'success');
+            const prenom = data.user.user_metadata?.first_name || '';
+            showMsg('loginMsg', `✅ Bienvenue, ${prenom} ! Redirection...`, 'success');
+            
             setTimeout(() => {
-                localStorage.setItem(USER_KEY, JSON.stringify({ prenom: user.prenom, email: user.email }));
                 window.location.href = 'dashboard.html';
             }, 900);
         }
 
         // ========== GUEST ==========
         function loginAsGuest() {
-            localStorage.setItem(USER_KEY, JSON.stringify({ prenom: 'Invité', email: '' }));
+            localStorage.setItem('carenote_guest', 'true');
             window.location.href = 'dashboard.html';
         }
 
