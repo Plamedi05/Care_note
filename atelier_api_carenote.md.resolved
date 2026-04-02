@@ -1,0 +1,92 @@
+# 🟢 Atelier — Intégration d'une API externe
+## Projet : CareNote
+
+---
+
+## Partie 1 : Identifier une API utile
+
+**API choisie : OpenWeatherMap** 🌤️
+
+| Question | Réponse |
+|---|---|
+| **Quelle donnée externe améliore le produit ?** | La météo du jour (température, ensoleillement, pluie) |
+| **Est-ce utile pour l'utilisateur ?** | ✅ Oui — la météo influence directement l'humeur. Afficher "Temps nuageux ce matin" à côté d'une entrée 😟 aide l'utilisateur à comprendre ses patterns émotionnels |
+
+**Justification :** La météo et l'humeur sont corrélées. CareNote peut enrichir chaque entrée automatiquement, sans que l'utilisateur ait à saisir quoi que ce soit.
+
+---
+
+## Partie 2 : Définir l'intégration
+
+| Élément | Détail |
+|---|---|
+| **API utilisée** | OpenWeatherMap API — gratuit jusqu'à 1000 appels/jour |
+| **Données récupérées** | Température (°C), condition météo (clair, nuageux, pluie), icône |
+| **Comment utilisées** | Ajoutées automatiquement à chaque entrée au moment de la saisie, affichées dans l'historique sous forme de tag |
+
+### Exemple de données récupérées
+
+```json
+{
+  "weather": [{ "description": "nuageux", "icon": "04d" }],
+  "main": { "temp": 12.3 }
+}
+```
+
+### Exemple d'affichage dans CareNote
+
+```
+😄 Heureux  |  Relations  |  16/02  |  ☀️ 18°C  |  [✏️][🗑️]
+```
+
+---
+
+## Partie 3 : Mise à jour de l'architecture
+
+```
+┌─────────────┐
+│ UTILISATEUR │
+│ (saisit son │
+│   humeur)   │
+└──────┬──────┘
+       │ Requête HTTPS
+       ▼
+┌─────────────────────────┐
+│   FRONTEND              │
+│   (dashboard.html)      │
+│   - Affiche le formulaire│
+│   - Envoie la saisie    │
+│     au backend          │
+└──────────┬──────────────┘
+           │ POST /api/humeur
+           ▼
+┌─────────────────────────────────────────────────┐
+│   BACKEND  (Node.js / Express)                  │
+│   - Reçoit la nouvelle entrée d'humeur          │
+│   - Appelle OpenWeatherMap avec géoloc user     │
+│   - Enrichit l'entrée avec la météo             │
+│   - Sauvegarde dans la base de données          │
+│   - Retourne la réponse au frontend             │
+└───────────┬─────────────────┬───────────────────┘
+            │                 │
+            ▼                 ▼
+┌───────────────┐   ┌──────────────────────────┐
+│   BASE DE     │   │   API EXTERNE            │
+│   DONNÉES     │   │   (OpenWeatherMap)        │
+│   (MongoDB /  │   │                          │
+│    Firebase)  │   │  GET /weather?city=Paris  │
+│               │   │  → { temp, description } │
+│   Stocke les  │   └──────────────────────────┘
+│   entrées +   │
+│   météo       │
+└───────────────┘
+```
+
+### Légende des flux
+
+| Flux | Description |
+|---|---|
+| `Frontend → Backend` | POST avec humeur + position utilisateur |
+| `Backend → API externe` | GET météo en temps réel |
+| `Backend → DB` | Sauvegarde de l'entrée enrichie |
+| `Backend → Frontend` | Confirmation + données météo affichées |
