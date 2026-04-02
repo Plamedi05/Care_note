@@ -39,6 +39,20 @@
             --cloud: rgba(255, 255, 255, 0.06);
         }
 
+        [data-theme="pink"] {
+            --primary: #F48FB1;
+            --primary-dark: #F06292;
+            --accent: #FF8BA7;
+            --bg: #FFF0F5;
+            --surface: #FFFFFF;
+            --surface2: #FFF5F8;
+            --border: #F8BBD0;
+            --text: #4A4A4A;
+            --text-light: #8D8D8D;
+            --shadow: 0 4px 20px rgba(244, 143, 177, 0.15);
+            --cloud: rgba(255, 255, 255, 0.85);
+        }
+
         /* ===== BASE ===== */
         *,
         *::before,
@@ -1446,7 +1460,7 @@
         function toggleTheme() {
             const html = document.documentElement;
             const current = html.getAttribute('data-theme');
-            const next = current === 'light' ? 'dark' : 'light';
+            const next = current === 'light' ? 'dark' : (current === 'dark' ? 'pink' : 'light');
             applyTheme(next);
             localStorage.setItem(THEME_KEY, next);
         }
@@ -1454,7 +1468,8 @@
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
             const btn = document.getElementById('themeBtn');
-            btn.textContent = theme === 'dark' ? '☀️ Jour' : '🌙 Nuit';
+            const btnText = theme === 'dark' ? '🌸 Rose' : (theme === 'pink' ? '❄️ Bleu' : '🌙 Nuit');
+            btn.textContent = btnText;
             if (moodChart) updateChartColors();
         }
 
@@ -1794,13 +1809,24 @@
 
         function updateChartColors() {
             if (!moodChart) return;
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const theme = document.documentElement.getAttribute('data-theme');
+            const isDark = theme === 'dark';
+            
             const color = isDark ? '#94A3B8' : '#7F8C8D';
             const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
             moodChart.options.scales.y.ticks.color = color;
             moodChart.options.scales.x.ticks.color = color;
             moodChart.options.scales.y.grid.color = gridColor;
             moodChart.options.scales.x.grid.color = gridColor;
+
+            const primaryColor = theme === 'pink' ? '#F48FB1' : '#4A90E2';
+            const bgColor = theme === 'pink' ? 'rgba(244,143,177,0.12)' : 'rgba(74,144,226,0.12)';
+            if(moodChart.data.datasets.length > 0) {
+                moodChart.data.datasets[0].backgroundColor = bgColor;
+                moodChart.data.datasets[0].borderColor = primaryColor;
+                moodChart.data.datasets[0].pointBackgroundColor = primaryColor;
+            }
+
             moodChart.update();
         }
 

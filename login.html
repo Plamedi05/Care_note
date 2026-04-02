@@ -37,6 +37,19 @@
             --cloud: rgba(255, 255, 255, 0.05);
         }
 
+        [data-theme="pink"] {
+            --primary: #F48FB1;
+            --primary-dark: #F06292;
+            --bg: #FFF0F5;
+            --surface: #FFFFFF;
+            --surface2: #FFF5F8;
+            --border: #F8BBD0;
+            --text: #4A4A4A;
+            --text-light: #8D8D8D;
+            --shadow: 0 8px 32px rgba(244, 143, 177, 0.2);
+            --cloud: rgba(255, 255, 255, 0.85);
+        }
+
         *,
         *::before,
         *::after {
@@ -586,16 +599,22 @@
         // ========== THEME ==========
         function toggleTheme() {
             const html = document.documentElement;
-            const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            const current = html.getAttribute('data-theme');
+            let next, btnText;
+            if (current === 'light') { next = 'dark'; btnText = '🌸 Rose'; }
+            else if (current === 'dark') { next = 'pink'; btnText = '❄️ Bleu'; }
+            else { next = 'light'; btnText = '🌙 Nuit'; }
+
             html.setAttribute('data-theme', next);
-            document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️ Jour' : '🌙 Nuit';
+            document.getElementById('themeBtn').textContent = btnText;
             localStorage.setItem('carenote_theme', next);
         }
 
         const savedTheme = localStorage.getItem('carenote_theme');
         if (savedTheme) {
             document.documentElement.setAttribute('data-theme', savedTheme);
-            document.getElementById('themeBtn').textContent = savedTheme === 'dark' ? '☀️ Jour' : '🌙 Nuit';
+            const btnText = savedTheme === 'dark' ? '🌸 Rose' : (savedTheme === 'pink' ? '❄️ Bleu' : '🌙 Nuit');
+            document.getElementById('themeBtn').textContent = btnText;
         }
 
         // Check active session
