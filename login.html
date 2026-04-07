@@ -1,755 +1,235 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="light">
+<html lang="fr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareNote - Connexion</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --primary: #4A90E2;
-            --primary-dark: #357ABD;
-            --bg: #F0F4FF;
-            --surface: #FFFFFF;
-            --surface2: #F8FAFF;
-            --border: #E1E8ED;
-            --text: #2C3E50;
-            --text-light: #7F8C8D;
-            --shadow: 0 8px 32px rgba(74, 144, 226, 0.12);
-            --radius: 20px;
-            --cloud: rgba(255, 255, 255, 0.85);
-            --error: #E74C3C;
-            --success: #27AE60;
-        }
-
-        [data-theme="dark"] {
-            --primary: #6BAED6;
-            --primary-dark: #4A90E2;
-            --bg: #111827;
-            --surface: #1E293B;
-            --surface2: #162032;
-            --border: #2D3748;
-            --text: #E2E8F0;
-            --text-light: #94A3B8;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            --cloud: rgba(255, 255, 255, 0.05);
-        }
-
-        [data-theme="pink"] {
-            --primary: #F48FB1;
-            --primary-dark: #F06292;
-            --bg: #FFF0F5;
-            --surface: #FFFFFF;
-            --surface2: #FFF5F8;
-            --border: #F8BBD0;
-            --text: #4A4A4A;
-            --text-light: #8D8D8D;
-            --shadow: 0 8px 32px rgba(244, 143, 177, 0.2);
-            --cloud: rgba(255, 255, 255, 0.85);
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--bg);
-            font-family: 'Inter', sans-serif;
-            color: var(--text);
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow-x: hidden;
-            position: relative;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* ===== CLOUDS ===== */
-        .clouds-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
-        }
-
-        .cloud {
-            position: absolute;
-            background: var(--cloud);
-            border-radius: 50px;
-            filter: blur(2px);
-            animation: floatCloud linear infinite;
-        }
-
-        .cloud::before,
-        .cloud::after {
-            content: '';
-            position: absolute;
-            background: inherit;
-            border-radius: 50%;
-        }
-
-        .cloud:nth-child(1) {
-            width: 120px;
-            height: 40px;
-            top: 10%;
-            left: -15%;
-            animation-duration: 30s;
-            animation-delay: 0s;
-            opacity: 0.6;
-        }
-
-        .cloud:nth-child(2) {
-            width: 80px;
-            height: 28px;
-            top: 25%;
-            left: -10%;
-            animation-duration: 22s;
-            animation-delay: 6s;
-            opacity: 0.4;
-        }
-
-        .cloud:nth-child(3) {
-            width: 160px;
-            height: 50px;
-            top: 5%;
-            left: -20%;
-            animation-duration: 36s;
-            animation-delay: 12s;
-            opacity: 0.5;
-        }
-
-        .cloud:nth-child(4) {
-            width: 90px;
-            height: 30px;
-            top: 55%;
-            left: -12%;
-            animation-duration: 27s;
-            animation-delay: 4s;
-            opacity: 0.35;
-        }
-
-        .cloud:nth-child(5) {
-            width: 110px;
-            height: 35px;
-            top: 75%;
-            left: -14%;
-            animation-duration: 33s;
-            animation-delay: 9s;
-            opacity: 0.45;
-        }
-
-        .cloud::before {
-            width: 55%;
-            height: 180%;
-            top: -80%;
-            left: 15%;
-        }
-
-        .cloud::after {
-            width: 35%;
-            height: 140%;
-            top: -60%;
-            right: 20%;
-        }
-
-        @keyframes floatCloud {
-            from {
-                transform: translateX(0);
-            }
-
-            to {
-                transform: translateX(calc(110vw + 200px));
-            }
-        }
-
-        /* ===== THEME TOGGLE ===== */
-        .theme-toggle {
-            position: fixed;
-            top: 18px;
-            right: 20px;
-            z-index: 10;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 50px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text);
-            font-family: inherit;
-            transition: all 0.3s;
-            box-shadow: var(--shadow);
-        }
-
-        .theme-toggle:hover {
-            border-color: var(--primary);
-        }
-
-        /* ===== CARD ===== */
-        .login-card {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 420px;
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            padding: 36px 32px;
-            animation: slideUp 0.5s ease;
-            transition: background 0.3s, border-color 0.3s;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(30px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        /* ===== LOGO AREA ===== */
-        .logo-area {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .bear-img {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            animation: bearBounce 3s ease-in-out infinite;
-            filter: drop-shadow(0 6px 12px rgba(74, 144, 226, 0.2));
-            margin-bottom: 10px;
-        }
-
-        @keyframes bearBounce {
-
-            0%,
-            100% {
-                transform: translateY(0) rotate(-3deg);
-            }
-
-            50% {
-                transform: translateY(-8px) rotate(3deg);
-            }
-        }
-
-        .logo-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 0;
-        }
-
-        .logo-sub {
-            font-size: 0.85rem;
-            color: var(--text-light);
-            margin-top: 4px;
-        }
-
-        /* ===== TABS ===== */
-        .tabs {
-            display: flex;
-            background: var(--surface2);
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 24px;
-            border: 1px solid var(--border);
-        }
-
-        .tab {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--text-light);
-            transition: all 0.25s;
-            border: none;
-            background: none;
-            font-family: inherit;
-        }
-
-        .tab.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 3px 10px rgba(74, 144, 226, 0.3);
-        }
-
-        /* ===== FORM ===== */
-        .form-panel {
-            display: none;
-        }
-
-        .form-panel.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            font-size: 0.87rem;
-            color: var(--text);
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            font-family: inherit;
-            font-size: 0.95rem;
-            background: var(--surface2);
-            color: var(--text);
-            transition: border-color 0.2s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 13px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: white;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-top: 6px;
-            letter-spacing: 0.3px;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        /* ===== FEEDBACK ===== */
-        .msg {
-            padding: 11px 14px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 14px;
-            display: none;
-        }
-
-        .msg.error {
-            background: #FEF0F0;
-            color: var(--error);
-            border: 1px solid #FECACA;
-            display: block;
-        }
-
-        .msg.success {
-            background: #F0FDF4;
-            color: var(--success);
-            border: 1px solid #BBF7D0;
-            display: block;
-        }
-
-        [data-theme="dark"] .msg.error {
-            background: #3B1F1F;
-            border-color: #7F1D1D;
-        }
-
-        [data-theme="dark"] .msg.success {
-            background: #1A3B2A;
-            border-color: #166534;
-        }
-
-        /* ===== SEPARATOR ===== */
-        .separator {
-            text-align: center;
-            color: var(--text-light);
-            font-size: 0.8rem;
-            margin: 18px 0;
-            position: relative;
-        }
-
-        .separator::before,
-        .separator::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 42%;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .separator::before {
-            left: 0;
-        }
-
-        .separator::after {
-            right: 0;
-        }
-
-        /* ===== PASSWORD STRENGTH ===== */
-        .strength-bar {
-            height: 4px;
-            background: var(--border);
-            border-radius: 2px;
-            margin-top: 6px;
-            overflow: hidden;
-        }
-
-        .strength-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.3s, background 0.3s;
-            width: 0%;
-        }
-
-        .strength-text {
-            font-size: 0.75rem;
-            margin-top: 4px;
-            color: var(--text-light);
-        }
-
-        /* ===== FOOTER ===== */
-        .footer-note {
-            text-align: center;
-            font-size: 0.78rem;
-            color: var(--text-light);
-            margin-top: 20px;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* ===== RESPONSIVE MOBILE ===== */
-        @media (max-width: 480px) {
-
-            body {
-                padding: 14px 14px 30px;
-                justify-content: flex-start;
-                padding-top: 60px;
-            }
-
-            /* Card prend toute la largeur */
-            .login-card {
-                padding: 28px 20px;
-                border-radius: 16px;
-                max-width: 100%;
-            }
-
-            /* Ourson un peu plus petit */
-            .bear-img {
-                width: 64px;
-                height: 64px;
-            }
-
-            .logo-title {
-                font-size: 1.5rem;
-            }
-
-            /* Toggle de thème : repositionné */
-            .theme-toggle {
-                top: 12px;
-                right: 12px;
-                padding: 6px 12px;
-                font-size: 0.78rem;
-            }
-
-            /* Inputs et boutons plus grands pour les doigts */
-            input[type="text"],
-            input[type="email"],
-            input[type="password"] {
-                padding: 14px 12px;
-                font-size: 1rem;
-            }
-
-            .btn-primary {
-                padding: 15px;
-                font-size: 1rem;
-            }
-
-            .tab {
-                padding: 11px 8px;
-                font-size: 0.83rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Care Note - Votre journal d'humeur bienveillant</title>
+  <meta name="description"
+    content="Enregistrez votre humeur, vos notes et recevez des conseils bienveillants avec Care Note." />
+  <link rel="stylesheet" href="./src/style.css" />
 </head>
 
-<body>
+<body data-theme="blue">
 
-    <!-- Clouds -->
-    <div class="clouds-bg">
-        <div class="cloud"></div>
-        <div class="cloud"></div>
-        <div class="cloud"></div>
-        <div class="cloud"></div>
-        <div class="cloud"></div>
-    </div>
+  <!-- Animated Clouds Background -->
+  <div class="clouds-wrapper">
+    <div class="cloud cloud-1"></div>
+    <div class="cloud cloud-2"></div>
+    <div class="cloud cloud-3"></div>
+    <div class="cloud cloud-4"></div>
+  </div>
 
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Nuit</button>
+  <!-- Global Theme Switcher -->
+  <div class="theme-switcher global-theme-switcher">
+    <button class="theme-btn active" data-theme-btn="blue" onclick="setTheme('blue')" title="Bleu Nuage">☁️</button>
+    <button class="theme-btn" data-theme-btn="pink" onclick="setTheme('pink')" title="Rose Pastel">🌸</button>
+    <button class="theme-btn" data-theme-btn="dark" onclick="setTheme('dark')" title="Mode Sombre">🌙</button>
+  </div>
 
-    <!-- Login Card -->
-    <div class="login-card">
+  <!-- ============== AUTH PAGE ============== -->
+  <div class="app-wrapper" id="auth-wrapper">
+    <div class="glass-card auth-page" id="auth-card">
 
-        <!-- Logo -->
-        <div class="logo-area">
-            <img src="bear_mascot.png" alt="CareNote ourson" class="bear-img">
-            <h1 class="logo-title">🌸 CareNote</h1>
-            <div class="logo-sub">Votre compagnon de bien-être quotidien</div>
+      <!-- Logo / Mascot -->
+      <div class="auth-logo">
+        <img src="/assets/teddy.png" alt="Mascotte Care Note" id="auth-mascot" />
+        <h1>Care Note 🐻</h1>
+        <p>Votre espace serein pour suivre<br />votre bien-être au quotidien.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Se connecter</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">S'inscrire</button>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="login-form">
+        <div class="form-group">
+          <label for="login-email">Adresse email</label>
+          <input type="email" id="login-email" placeholder="votre@email.com" required />
         </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab active" id="tabLogin" onclick="switchTab('login')">Connexion</button>
-            <button class="tab" id="tabRegister" onclick="switchTab('register')">Créer un compte</button>
+        <div class="form-group">
+          <label for="login-password">Mot de passe</label>
+          <input type="password" id="login-password" placeholder="••••••••" required />
         </div>
+        <div class="form-error" id="login-error"></div>
+        <button type="submit" class="btn-primary" id="login-btn">Se connecter ✨</button>
+      </form>
 
-        <!-- === LOGIN FORM === -->
-        <div class="form-panel active" id="panelLogin">
-            <div class="msg" id="loginMsg"></div>
-            <div class="form-group">
-                <label for="loginEmail">Email</label>
-                <input type="email" id="loginEmail" placeholder="votre@email.com" autocomplete="email">
-            </div>
-            <div class="form-group">
-                <label for="loginPassword">Mot de passe</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-            </div>
-            <button class="btn-primary" onclick="handleLogin()">Se connecter →</button>
-
-            <div class="separator">ou</div>
-
-            <button class="btn-primary" onclick="loginAsGuest()"
-                style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">
-                🎭 Continuer en invité
-            </button>
+      <!-- Signup Form -->
+      <form class="auth-form" id="signup-form" style="display:none">
+        <div class="form-group">
+          <label for="signup-name">Votre prénom</label>
+          <input type="text" id="signup-name" placeholder="Sophie" required />
         </div>
-
-        <!-- === REGISTER FORM === -->
-        <div class="form-panel" id="panelRegister">
-            <div class="msg" id="registerMsg"></div>
-            <div class="form-group">
-                <label for="regPrenom">Prénom</label>
-                <input type="text" id="regPrenom" placeholder="Marie" autocomplete="given-name">
-            </div>
-            <div class="form-group">
-                <label for="regEmail">Email</label>
-                <input type="email" id="regEmail" placeholder="votre@email.com" autocomplete="email">
-            </div>
-            <div class="form-group">
-                <label for="regPassword">Mot de passe</label>
-                <input type="password" id="regPassword" placeholder="Min. 6 caractères" autocomplete="new-password"
-                    oninput="checkStrength(this.value)">
-                <div class="strength-bar">
-                    <div class="strength-fill" id="strengthFill"></div>
-                </div>
-                <div class="strength-text" id="strengthText"></div>
-            </div>
-            <div class="form-group">
-                <label for="regConfirm">Confirmer le mot de passe</label>
-                <input type="password" id="regConfirm" placeholder="••••••••" autocomplete="new-password">
-            </div>
-            <button class="btn-primary" onclick="handleRegister()">Créer mon compte ✨</button>
+        <div class="form-group">
+          <label for="signup-email">Adresse email</label>
+          <input type="email" id="signup-email" placeholder="votre@email.com" required />
         </div>
+        <div class="form-group">
+          <label for="signup-password">Mot de passe</label>
+          <input type="password" id="signup-password" placeholder="Minimum 6 caractères" required minlength="6" />
+        </div>
+        <div class="form-error" id="signup-error"></div>
+        <button type="submit" class="btn-primary" id="signup-btn">Créer mon espace 🌸</button>
+      </form>
 
     </div>
+  </div>
 
-    <div class="footer-note">🔒 Vos données restent sur votre appareil — aucun serveur !</div>
+  <!-- ============== DASHBOARD ============== -->
+  <div class="dashboard-wrapper" id="dashboard-wrapper">
 
-    <script>
-        const supabaseUrl = 'https://hgnyfwmcydcujueudmun.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnbnlmd21jeWRjdWp1ZXVkbXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDQyMjIsImV4cCI6MjA5MDcyMDIyMn0.TGD74HWkEg7DqX_EdFJbq-AVp5Qn8gcH8EN4Ky_pj18';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    <!-- Navbar -->
+    <nav class="glass-card navbar">
+      <div class="navbar-brand">
+        <h2>Care Note</h2>
+      </div>
+      <div class="navbar-actions">
+        <div class="glass-card user-badge">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span id="user-name-display">Utilisateur</span>
+        </div>
+        <button class="btn-logout" onclick="logout()">Déconnexion</button>
+      </div>
+    </nav>
 
-        // ========== THEME ==========
-        function toggleTheme() {
-            const html = document.documentElement;
-            const current = html.getAttribute('data-theme');
-            let next, btnText;
-            if (current === 'light') { next = 'dark'; btnText = '🌸 Rose'; }
-            else if (current === 'dark') { next = 'pink'; btnText = '❄️ Bleu'; }
-            else { next = 'light'; btnText = '🌙 Nuit'; }
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid" style="margin-top: 1.5rem;">
 
-            html.setAttribute('data-theme', next);
-            document.getElementById('themeBtn').textContent = btnText;
-            localStorage.setItem('carenote_theme', next);
-        }
+      <!-- Mood Picker -->
+      <details class="glass-card card card-full collapsible-card" open>
+        <summary class="card-header">
+          <div class="card-title">🌤️ Comment vous sentez-vous aujourd'hui ?</div>
+          <span class="chevron">▼</span>
+        </summary>
+        <div class="card-body">
+          <div class="mood-selector">
+            <div class="mood-options">
+              <div class="mood-option" data-mood="terrible" onclick="selectMood(this)">
+                <span class="mood-emoji">😢</span>
+                <span class="mood-label">Très mal</span>
+              </div>
+              <div class="mood-option" data-mood="bad" onclick="selectMood(this)">
+                <span class="mood-emoji">😕</span>
+                <span class="mood-label">Pas trop bien</span>
+              </div>
+              <div class="mood-option" data-mood="neutral" onclick="selectMood(this)">
+                <span class="mood-emoji">😐</span>
+                <span class="mood-label">Normal</span>
+              </div>
+              <div class="mood-option" data-mood="good" onclick="selectMood(this)">
+                <span class="mood-emoji">😊</span>
+                <span class="mood-label">Très bien</span>
+              </div>
+              <div class="mood-option" data-mood="great" onclick="selectMood(this)">
+                <span class="mood-emoji">🤩</span>
+                <span class="mood-label">Super bien</span>
+              </div>
+            </div>
+            <div class="mood-note-area">
+              <textarea id="mood-note" placeholder="Décrivez votre journée, vos pensées... 🌟"></textarea>
+              <button class="btn-primary" onclick="saveMood()" id="save-mood-btn" disabled>Enregistrer mon humeur
+                💾</button>
+            </div>
+          </div>
+        </div>
+      </details>
 
-        const savedTheme = localStorage.getItem('carenote_theme');
-        if (savedTheme) {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            const btnText = savedTheme === 'dark' ? '🌸 Rose' : (savedTheme === 'pink' ? '❄️ Bleu' : '🌙 Nuit');
-            document.getElementById('themeBtn').textContent = btnText;
-        }
+      <!-- Stats -->
+      <div class="glass-card card">
+        <div class="card-header">
+          <div class="card-title">📊 Mes statistiques</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-label">Entrées totales</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-positive">0</div>
+            <div class="stat-label">Jours positifs</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-streak">0</div>
+            <div class="stat-label">Série de jours</div>
+          </div>
+        </div>
+      </div>
 
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-                window.location.href = 'dashboard.html';
-            }
-        });
+      <!-- AI Suggestion -->
+      <div class="glass-card card" id="ai-suggestion-card">
+        <div class="card-header">
+          <div class="card-title">🤖 Conseil bienveillant</div>
+        </div>
+        <p id="ai-suggestion-text" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.7;">
+          Enregistrez votre première humeur pour recevoir un conseil personnalisé ! 🌟
+        </p>
+      </div>
 
-        // ========== TABS ==========
-        function switchTab(tab) {
-            document.getElementById('panelLogin').classList.toggle('active', tab === 'login');
-            document.getElementById('panelRegister').classList.toggle('active', tab === 'register');
-            document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-            document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
-            clearMessages();
-        }
+      <!-- History -->
+      <details class="glass-card card card-full collapsible-card" open>
+        <summary class="card-header">
+          <div class="card-title">📅 Mon historique</div>
+          <span class="chevron">▼</span>
+        </summary>
+        <div class="card-body">
+          <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterHistory('all', this)">Tout</button>
+            <button class="filter-btn" onclick="filterHistory('great', this)">🤩 Super</button>
+            <button class="filter-btn" onclick="filterHistory('good', this)">😊 Bien</button>
+            <button class="filter-btn" onclick="filterHistory('neutral', this)">😐 Neutre</button>
+            <button class="filter-btn" onclick="filterHistory('bad', this)">😕 Pas bien</button>
+            <button class="filter-btn" onclick="filterHistory('terrible', this)">😢 Mal</button>
+          </div>
+          <div class="history-list" id="history-list">
+            <div class="history-empty">Aucune humeur enregistrée pour l'instant.<br />Commencez dès maintenant ! ✨</div>
+          </div>
+        </div>
+      </details>
 
-        function clearMessages() {
-            ['loginMsg', 'registerMsg'].forEach(id => {
-                const el = document.getElementById(id);
-                el.className = 'msg';
-                el.textContent = '';
-            });
-        }
+    </div>
 
-        function showMsg(id, text, type) {
-            const el = document.getElementById(id);
-            el.textContent = text;
-            el.className = `msg ${type}`;
-        }
+    <!-- Footer with Mascot and Quote -->
+    <div class="dashboard-footer">
+      <img src="/assets/teddy.png" alt="Mascotte Care Note" class="footer-mascot" />
+      <div class="daily-quote-bottom">
+        <p id="daily-quote-text">Chargement de votre citation du jour...</p>
+      </div>
+    </div>
+  </div>
 
-        // ========== REGISTER ==========
-        async function handleRegister() {
-            const prenom = document.getElementById('regPrenom').value.trim();
-            const email = document.getElementById('regEmail').value.trim().toLowerCase();
-            const password = document.getElementById('regPassword').value;
-            const confirm = document.getElementById('regConfirm').value;
+  <!-- ============== EDIT MODAL ============== -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="glass-card modal">
+      <div class="modal-header">
+        <div class="modal-title">✏️ Modifier cette entrée</div>
+        <button class="btn-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="mood-options" id="modal-mood-options">
+        <div class="mood-option" data-mood="terrible" onclick="selectModalMood(this)"><span
+            class="mood-emoji">😢</span><span class="mood-label">Très mal</span></div>
+        <div class="mood-option" data-mood="bad" onclick="selectModalMood(this)"><span class="mood-emoji">😕</span><span
+            class="mood-label">Pas bien</span></div>
+        <div class="mood-option" data-mood="neutral" onclick="selectModalMood(this)"><span
+            class="mood-emoji">😐</span><span class="mood-label">Normal</span></div>
+        <div class="mood-option" data-mood="good" onclick="selectModalMood(this)"><span
+            class="mood-emoji">😊</span><span class="mood-label">Bien</span></div>
+        <div class="mood-option" data-mood="great" onclick="selectModalMood(this)"><span
+            class="mood-emoji">🤩</span><span class="mood-label">Super</span></div>
+      </div>
+      <textarea id="modal-note" placeholder="Votre note..."
+        style="width:100%;min-height:100px;padding:1rem;border-radius:14px;border:1px solid var(--input-border);background:var(--input-bg);font-family:var(--font);font-size:0.95rem;color:var(--text-secondary);resize:vertical;outline:none;line-height:1.5;"></textarea>
+      <button class="btn-primary" onclick="saveEdit()">Sauvegarder les modifications ✨</button>
+    </div>
+  </div>
 
-            if (!prenom) return showMsg('registerMsg', '⚠️ Entrez votre prénom', 'error');
-            if (!email.includes('@')) return showMsg('registerMsg', '⚠️ Email invalide', 'error');
-            if (password.length < 6) return showMsg('registerMsg', '⚠️ Mot de passe min. 6 caractères', 'error');
-            if (password !== confirm) return showMsg('registerMsg', '❌ Les mots de passe ne correspondent pas', 'error');
+  <!-- ============== TOAST CONTAINER ============== -->
+  <div class="toast-container" id="toast-container"></div>
 
-            showMsg('registerMsg', 'Création en cours...', 'success');
-            
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: {
-                        first_name: prenom
-                    }
-                }
-            });
-
-            if (error) {
-                return showMsg('registerMsg', `❌ Erreur : ${error.message}`, 'error');
-            }
-
-            showMsg('registerMsg', '✅ Compte créé ! Connexion en cours...', 'success');
-
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1200);
-        }
-
-        // ========== LOGIN ==========
-        async function handleLogin() {
-            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-            const password = document.getElementById('loginPassword').value;
-
-            if (!email || !password) return showMsg('loginMsg', '⚠️ Entrez email et mot de passe', 'error');
-
-            showMsg('loginMsg', 'Connexion en cours...', 'success');
-
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-
-            if (error) {
-                return showMsg('loginMsg', '❌ Email ou mot de passe incorrect', 'error');
-            }
-
-            const prenom = data.user.user_metadata?.first_name || '';
-            showMsg('loginMsg', `✅ Bienvenue, ${prenom} ! Redirection...`, 'success');
-            
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 900);
-        }
-
-        // ========== GUEST ==========
-        function loginAsGuest() {
-            localStorage.setItem('carenote_guest', 'true');
-            window.location.href = 'dashboard.html';
-        }
-
-        // ========== PASSWORD STRENGTH ==========
-        function checkStrength(pwd) {
-            const fill = document.getElementById('strengthFill');
-            const text = document.getElementById('strengthText');
-            let score = 0;
-            if (pwd.length >= 6) score++;
-            if (pwd.length >= 10) score++;
-            if (/[A-Z]/.test(pwd)) score++;
-            if (/[0-9]/.test(pwd)) score++;
-            if (/[^A-Za-z0-9]/.test(pwd)) score++;
-
-            const levels = [
-                { pct: '0%', color: '#ccc', label: '' },
-                { pct: '25%', color: '#E74C3C', label: 'Très faible' },
-                { pct: '50%', color: '#F39C12', label: 'Faible' },
-                { pct: '75%', color: '#F1C40F', label: 'Moyen' },
-                { pct: '90%', color: '#2ECC71', label: 'Fort' },
-                { pct: '100%', color: '#27AE60', label: 'Très fort 💪' },
-            ];
-
-            const lvl = levels[Math.min(score, 5)];
-            fill.style.width = lvl.pct;
-            fill.style.background = lvl.color;
-            text.textContent = lvl.label;
-            text.style.color = lvl.color;
-        }
-
-        // ========== KEYBOARD ENTER ==========
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const loginActive = document.getElementById('panelLogin').classList.contains('active');
-                if (loginActive) handleLogin();
-                else handleRegister();
-            }
-        });
-    </script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 
 </html>
